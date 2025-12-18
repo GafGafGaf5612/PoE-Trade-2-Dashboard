@@ -17,7 +17,6 @@
 *(Обновления, вопросы и обсуждения)*
 
 ![Dashboard Preview](preview.png)
-*(Добавьте скриншот расширения в корень репо с именем preview.png)*
 
 ## ✨ Возможности
 
@@ -33,8 +32,8 @@
 
 Так как это Open Source проект, установка происходит в режиме разработчика (это безопасно и занимает 1 минуту):
 
-1. **Скачайте код:**
-   - Нажмите зеленую кнопку **Code** -> **Download ZIP** вверху этой страницы и распакуйте архив.
+1. **Скачайте:**
+   - С вкладки Релизы [Releases](https://github.com/GafGafGaf5612/PoE-Trade-2-Dashboard/releases/)
    - *Или через git:* `git clone https://github.com/GafGafGaf5612/poe-trade-2-dashboard.git`
 2. **Откройте расширения Chrome:**
    - Введите в адресную строку: `chrome://extensions/`
