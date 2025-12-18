@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PoE 2 Seller Dashboard </title>
+  <style>
+    body { 
+      margin: 0; padding: 0; 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      background-color: #0b0b0b; color: #e0e0e0; 
+    }
+    
+    .container {
+      max-width: 1300px; margin: 0 auto; padding: 20px;
+      display: grid; grid-template-columns: 320px 1fr; gap: 20px;
+    }
+
+    /* --- SIDEBAR --- */
+    .sidebar {
+      background: #161616; padding: 20px; border-radius: 8px; border: 1px solid #333;
+      height: fit-content; position: sticky; top: 20px;
+      display: flex; flex-direction: column;
+    }
+    
+    h2 { margin-top: 0; color: #dcb164; border-bottom: 1px solid #333; padding-bottom: 10px; font-size: 20px; }
+    
+    label { font-size: 12px; color: #888; display: block; margin-bottom: 5px; margin-top: 15px; }
+    input, select { 
+      width: 100%; padding: 10px; margin-bottom: 5px;
+      background: #252525; border: 1px solid #444; color: #fff; 
+      border-radius: 4px; box-sizing: border-box; 
+    }
+    input:focus, select:focus { border-color: #dcb164; outline: none; }
+
+    .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+    button { 
+      flex: 1; padding: 12px; font-weight: bold; cursor: pointer;
+      border-radius: 4px; transition: all 0.2s; font-size: 13px;
+      border: 1px solid transparent;
+    }
+    #btnCalc { background: #dcb164; color: #000; }
+    #btnCalc:hover { background: #cda053; }
+    #btnRefresh { background: #2a2a2a; color: #ccc; border-color: #444; }
+    #btnRefresh:hover { background: #3a3a3a; color: #fff; }
+    button:disabled { opacity: 0.5; cursor: default; filter: grayscale(1); }
+
+    #statusInfo { font-size: 11px; color: #666; margin-top: 5px; text-align: right; min-height: 15px;}
+    
+    #logs { 
+      font-size: 11px; color: #777; height: 120px; overflow-y: auto; 
+      margin-top: 15px; padding: 10px; border: 1px dashed #333; background: #111;
+      font-family: monospace; 
+    }
+
+    /* --- RATES PANEL (SIDEBAR) --- */
+    #ratesPanel { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; display: none; }
+    .rates-header { font-size: 12px; font-weight: bold; color: #aaa; margin-bottom: 5px; display: flex; justify-content: space-between; }
+    .rates-list {
+        max-height: 300px; overflow-y: auto; background: #111;
+        border: 1px solid #333; border-radius: 4px;
+    }
+    .rate-row {
+        display: flex; justify-content: space-between; padding: 5px 8px;
+        border-bottom: 1px solid #222; font-size: 12px;
+    }
+    .rate-row:last-child { border-bottom: none; }
+    .rate-name { color: #ccc; }
+    .rate-val { color: #dcb164; font-weight: bold; }
+    .rate-val.expensive { color: #d896ff; }
+
+    /* --- MAIN CONTENT --- */
+    .main-content { display: flex; flex-direction: column; gap: 20px; }
+    .section-title { font-size: 18px; color: #fff; border-left: 4px solid #dcb164; padding-left: 10px; margin-bottom: 10px; }
+
+    .card { background: #1c1c1c; border: 1px solid #333; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+    .card-title { font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+    .card-count { background: #333; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: #aaa; }
+
+    /* --- REVENUE GRID --- */
+    .currency-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .currency-item { display: flex; justify-content: space-between; background: #252525; padding: 8px 12px; border-radius: 4px; }
+    .curr-val { color: #dcb164; font-weight: bold; }
+
+    /* --- STALE ITEMS LIST --- */
+    .stale-list { display: flex; flex-direction: column; gap: 5px; }
+    
+    .stale-row {
+      display: grid; 
+      /* Icon | Name/Desc | Loc | Type | Price | Age */
+      grid-template-columns: 50px 2.5fr 140px 100px 100px 80px; 
+      align-items: center; gap: 10px;
+      padding: 8px; background: #222; border-radius: 4px; border-left: 3px solid transparent;
+      transition: background 0.1s;
+    }
+    .stale-row:hover { background: #2a2a2a; }
+
+    .item-icon { width: 40px; height: 40px; object-fit: contain; background: #111; border-radius: 4px; border: 1px solid #333; }
+    
+    .item-text-group { display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+    .stale-main-name { color: #e0e0e0; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stale-sub-name { color: #777; font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .stale-loc { color: #666; font-size: 11px; display: flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1.2;}
+    .loc-highlight { color: #a38d6d; font-family: monospace; font-weight: bold;}
+
+    .stale-price { color: #eee; text-align: right; font-weight: bold; }
+    .stale-type { font-size: 11px; text-align: center; color: #666; background: #111; padding: 4px; border-radius: 3px; }
+    .stale-age { text-align: right; font-weight: bold; font-size: 14px; }
+
+    /* --- COLORS & TIERS --- */
+    .warn { border-left-color: #e67e22; }
+    .danger { border-left-color: #e74c3c; }
+    .text-warn { color: #e67e22; }
+    .text-danger { color: #e74c3c; }
+
+    .price-tier-s { color: #d896ff; font-weight: 800; font-size: 1.1em; text-shadow: 0 0 10px rgba(216, 150, 255, 0.2); }
+    .price-tier-a { color: #ffcc00; font-weight: 700; font-size: 1.05em; }
+    .price-tier-b { color: #eeeeee; font-weight: 500; }
+    .price-tier-c { color: #555555; font-size: 0.9em; font-weight: normal; }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>PoE 2 Dashboard</h2>
+    <p>tg: <a href="https://t.me/SphereofAutomation">https://t.me/SphereofAutomation</a></p>
+    <p>Обновления, вопросы и другие приколы в ТГ</p>
+    
+    <label>League</label>
+    <input type="text" id="league" value="Fate of the Vaal">
+
+    <label>Realm</label>
+    <select id="realm">
+      <option value="poe2" selected>PoE 2</option>
+      <option value="pc">PoE 1</option>
+    </select>
+
+    <label>Seller Account Name</label>
+    <input type="text" id="account" value="IMBOTASHER_FEMENIST#1983">
+
+    <label>Stale Threshold (Hours)</label>
+    <input type="number" id="hrsThreshold" value="12" min="1">
+
+    <div class="btn-group">
+        <button id="btnCalc">ANALYZE</button>
+        <button id="btnRefresh" title="Clean cache and redownload">REFRESH</button>
+    </div>
+    <div id="statusInfo"></div>
+
+    <div id="logs">Ready...</div>
+
+    <!-- POE NINJA RATES -->
+    <div id="ratesPanel">
+        <div class="rates-header">
+            <span>Ninja Rates</span>
+            <span>(Chaos Eq)</span>
+        </div>
+        <div class="rates-list" id="ratesListContent"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS AREA -->
+  <div class="main-content" id="resultsArea">
+    <div style="color: #444; font-size: 24px; text-align: center; margin-top: 150px; font-weight: bold;">
+      Enter account and press ANALYZE
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>

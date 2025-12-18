@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "PoE Trade 2 Dashboard",
+  "version": "2.2",
+  "description": "Анализ трейда: Залежавшийся товар, Подсчет велью, Курсы poe.ninja tg: https://t.me/SphereofAutomation",
+  "permissions": [],
+  "host_permissions": [
+    "https://pathofexile.com/*",
+    "https://www.pathofexile.com/*",
+    "https://poe.ninja/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Dashboard"
+  }
+}
