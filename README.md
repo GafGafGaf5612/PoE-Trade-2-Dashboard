@@ -35,6 +35,7 @@
 1. **Скачайте:**
    - С вкладки Релизы [Releases](https://github.com/GafGafGaf5612/PoE-Trade-2-Dashboard/releases/)
    - *Или через git:* `git clone https://github.com/GafGafGaf5612/poe-trade-2-dashboard.git`
+   - Нажмите зеленую кнопку **Code** -> **Download ZIP** вверху этой страницы и распакуйте архив.
 2. **Откройте расширения Chrome:**
    - Введите в адресную строку: `chrome://extensions/`
 3. **Включите Developer Mode:**
