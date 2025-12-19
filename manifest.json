@@ -1,9 +1,11 @@
 {
   "manifest_version": 3,
   "name": "PoE Trade 2 Dashboard",
-  "version": "2.2",
-  "description": "Анализ трейда: Залежавшийся товар, Подсчет велью, Курсы poe.ninja tg: https://t.me/SphereofAutomation",
-  "permissions": [],
+  "version": "2.3",
+  "description": "Анализ трейда: Залежавшийся товар, Подсчет велью, Курсы poe.ninja, Детектор продаж. tg: https://t.me/SphereofAutomation",
+  "permissions": [
+    "cookies" 
+  ],
   "host_permissions": [
     "https://pathofexile.com/*",
     "https://www.pathofexile.com/*",
