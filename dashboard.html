@@ -42,6 +42,11 @@
     #btnCalc:hover { background: #cda053; }
     #btnRefresh { background: #2a2a2a; color: #ccc; border-color: #444; }
     #btnRefresh:hover { background: #3a3a3a; color: #fff; }
+    /* --- NEW BUTTON STYLE --- */
+    #btnCheckSales {
+      background: #3498db; color: #fff; flex-basis: 100%; /* Full width */
+    }
+    #btnCheckSales:hover { background: #2980b9; }
     button:disabled { opacity: 0.5; cursor: default; filter: grayscale(1); }
 
     #statusInfo { font-size: 11px; color: #666; margin-top: 5px; text-align: right; min-height: 15px;}
@@ -119,6 +124,122 @@
     .price-tier-b { color: #eeeeee; font-weight: 500; }
     .price-tier-c { color: #555555; font-size: 0.9em; font-weight: normal; }
 
+    /* --- STASH HEATMAP (MODIFIED) --- */
+    #heatmapSection .card { /* Use a card for better framing */
+        padding: 0;
+        overflow: hidden;
+    }
+    .heatmap-tabs-nav {
+        display: flex;
+        flex-wrap: wrap;
+        background: #111;
+        padding: 5px 5px 0 5px;
+        border-bottom: 2px solid #dcb164;
+    }
+    .heatmap-tab-link {
+        padding: 8px 15px;
+        cursor: pointer;
+        color: #888;
+        font-weight: bold;
+        font-size: 13px;
+        border-radius: 4px 4px 0 0;
+        border: 1px solid transparent;
+        border-bottom: none;
+        margin-right: 3px;
+        position: relative;
+        bottom: -1px;
+        transition: all 0.2s;
+    }
+    .heatmap-tab-link:hover {
+        background: #2f2f2f;
+        color: #ddd;
+    }
+    .heatmap-tab-link.active {
+        background: #1c1c1c;
+        border-color: #333;
+        color: #fff;
+    }
+    .heatmap-content {
+        padding: 15px;
+        background: #1c1c1c;
+    }
+    .stash-grid-wrapper {
+        display: none; /* Hidden by default */
+        flex-direction: column;
+        align-items: center;
+    }
+    .stash-grid-wrapper.active {
+        display: flex; /* Shown when active */
+    }
+    .stash-grid {
+        display: grid;
+        gap: 2px;
+        background-color: #111;
+        border: 1px solid #444;
+    }
+    /* Normal Tab: 12x12 */
+    .stash-grid.normal {
+        grid-template-columns: repeat(12, 38px);
+        grid-template-rows: repeat(12, 38px);
+    }
+    /* Quad Tab: 24x24 */
+    .stash-grid.quad {
+        grid-template-columns: repeat(24, 28px);
+        grid-template-rows: repeat(24, 28px);
+    }
+    .heatmap-item {
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: 3px;
+        position: relative;
+        border: 1px solid #555;
+        background-color: rgba(80, 80, 80, 0.4); /* Default */
+    }
+    /* ... (keep heatmap-item.stale, valuable-* styles) ... */
+    .heatmap-item.stale {
+        background-color: rgba(231, 76, 60, 0.6); /* Red for stale */
+        border-color: #e74c3c;
+    }
+    .heatmap-item.valuable-1 { background-color: rgba(39, 174, 96, 0.5); border-color: #27ae60; }
+    .heatmap-item.valuable-2 { background-color: rgba(46, 204, 113, 0.7); border-color: #2ecc71; }
+    .heatmap-item.valuable-3 { background-color: rgba(255, 204, 0, 0.8); border-color: #ffcc00; }
+    .heatmap-item.valuable-4 { background-color: rgba(216, 150, 255, 0.8); border-color: #d896ff; }
+
+/* --- NEW SALES HISTORY STYLES --- */
+    .sales-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        text-align: center;
+    }
+    .summary-item {
+        background: #252525;
+        padding: 15px;
+        border-radius: 6px;
+    }
+    .summary-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #3498db;
+    }
+    .summary-label {
+        font-size: 12px;
+        color: #888;
+        margin-top: 5px;
+    }
+    .sales-list { display: flex; flex-direction: column; gap: 5px; }
+    .sale-row {
+      display: grid; 
+      grid-template-columns: 50px 1fr 150px 150px;
+      align-items: center; gap: 15px;
+      padding: 8px; background: #222; border-radius: 4px;
+    }
+    .sale-buyer { font-size: 12px; color: #666; }
+    .sale-buyer-name { color: #aaa; font-weight: bold; }
+    .sale-price { text-align: right; }
+    .sale-time { font-size: 11px; color: #777; text-align: right; }
+
     /* Scrollbars */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #111; }
@@ -128,7 +249,7 @@
 <body>
 
 <div class="container">
-  <!-- SIDEBAR -->
+  <!-- ... (Sidebar remains the same) ... -->
   <div class="sidebar">
     <h2>PoE 2 Dashboard</h2>
     <p>tg: <a href="https://t.me/SphereofAutomation">https://t.me/SphereofAutomation</a></p>
@@ -150,10 +271,16 @@
     <input type="number" id="hrsThreshold" value="12" min="1">
 
     <div class="btn-group">
-        <button id="btnCalc">ANALYZE</button>
-        <button id="btnRefresh" title="Clean cache and redownload">REFRESH</button>
+        <button id="btnCheckSales">MY SALES</button>
+        <button id="btnCalc">ANALYZE ITEMS</button>
+        <button id="btnRefresh" title="Clean cache and redownload">REFRESH ALL</button>
     </div>
-    <div id="statusInfo"></div>
+
+    <!-- THIS IS THE CRITICAL BLOCK THAT IS LIKELY MISSING OR INCORRECT -->
+    <div class="status-container">
+        <div id="salesStatusInfo"></div>  <!-- THIS is the element the JS is looking for -->
+        <div id="statusInfo"></div>
+    </div>
 
     <div id="logs">Ready...</div>
 
@@ -167,11 +294,42 @@
     </div>
   </div>
 
-  <!-- RESULTS AREA -->
-  <div class="main-content" id="resultsArea">
-    <div style="color: #444; font-size: 24px; text-align: center; margin-top: 150px; font-weight: bold;">
-      Enter account and press ANALYZE
+  <!-- MAIN CONTENT (MODIFIED HTML STRUCTURE) -->
+  <div class="main-content">
+    <!-- NEW: SALES HISTORY SECTION -->
+    <div id="salesHistorySection" style="display:none;">
+        <div class="section-title" style="border-color: #3498db;">📈 Recent Sales History</div>
+        <div class="card" id="salesSummaryCard">
+            <!-- Summary stats will be injected here -->
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Latest Trades</div>
+            </div>
+            <div class="sales-list" id="salesList">
+                <!-- Sale rows will be injected here -->
+            </div>
+        </div>
     </div>
+    <div id="resultsArea">
+        <div style="color: #444; font-size: 24px; text-align: center; margin-top: 150px; font-weight: bold;">
+          Enter account and press ANALYZE
+        </div>
+    </div>
+    
+    <!-- MODIFIED HEATMAP SECTION -->
+    <div id="heatmapSection" style="display:none;">
+        <div class="section-title" style="border-color: #e74c3c;">🔥 Stash Heatmap</div>
+        <div class="card">
+            <div id="heatmapTabsNav" class="heatmap-tabs-nav">
+                <!-- Tab links will be generated here by JS -->
+            </div>
+            <div id="heatmapContent" class="heatmap-content">
+                <!-- Tab grids will be generated here by JS -->
+            </div>
+        </div>
+    </div>
+
   </div>
 </div>
 
