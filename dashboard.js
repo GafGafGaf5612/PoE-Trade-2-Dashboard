@@ -1,10 +1,49 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Main item analysis listeners
+
+    // --- 1. Load ALL Saved Settings ---
+
+    // Load Saved Account Name
+    const savedAccount = localStorage.getItem('poe2_dashboard_account');
+    if (savedAccount) {
+        document.getElementById('account').value = savedAccount;
+    }
+
+    // Load Saved League
+    const savedLeague = localStorage.getItem('poe2_dashboard_league');
+    if (savedLeague) {
+        document.getElementById('league').value = savedLeague;
+    }
+
+    // Load Saved Realm
+    const savedRealm = localStorage.getItem('poe2_dashboard_realm');
+    if (savedRealm) {
+        document.getElementById('realm').value = savedRealm;
+    }
+
+    // --- 2. Setup ALL Event Listeners to Save Settings ---
+
+    // Save Account Name on input
+    document.getElementById('account').addEventListener('input', (e) => {
+        localStorage.setItem('poe2_dashboard_account', e.target.value.trim());
+    });
+
+    // Save League on input
+    document.getElementById('league').addEventListener('input', (e) => {
+        localStorage.setItem('poe2_dashboard_league', e.target.value.trim());
+    });
+
+    // Save Realm on change
+    document.getElementById('realm').addEventListener('change', (e) => {
+        localStorage.setItem('poe2_dashboard_realm', e.target.value);
+    });
+
+
+    // --- 3. Main Action Button Listeners ---
     document.getElementById('btnCalc').addEventListener('click', () => handleAnalysis(false));
     document.getElementById('btnRefresh').addEventListener('click', () => handleAnalysis(true));
-    // Sales history listener
     document.getElementById('btnCheckSales').addEventListener('click', handleSalesAnalysis);
 });
+
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -31,11 +70,12 @@ let GLOBAL_HISTORY_CACHE = { data: null, timestamp: 0, league: '' };
 // =================================================================================
 
 async function handleSalesAnalysis() {
-    log('--- Sales analysis started ---'); // <-- ADDED LOG
+    log('--- Sales analysis started ---');
     const league = document.getElementById('league').value.trim();
+    const realm = document.getElementById('realm').value.trim(); // <<< ДОБАВЛЕНО
     const btn = document.getElementById('btnCheckSales');
     const statusDiv = document.getElementById('salesStatusInfo');
-    
+
     btn.disabled = true;
     statusDiv.style.color = '#e67e22';
 
@@ -48,9 +88,9 @@ async function handleSalesAnalysis() {
         }
 
         const now = Date.now();
-        const isCacheValid = GLOBAL_HISTORY_CACHE.data && 
-                             (now - GLOBAL_HISTORY_CACHE.timestamp < SALES_CACHE_DURATION_MS) &&
-                             (GLOBAL_HISTORY_CACHE.league === league);
+        const isCacheValid = GLOBAL_HISTORY_CACHE.data &&
+            (now - GLOBAL_HISTORY_CACHE.timestamp < SALES_CACHE_DURATION_MS) &&
+            (GLOBAL_HISTORY_CACHE.league === league);
 
         let salesData;
         if (isCacheValid) {
@@ -59,9 +99,9 @@ async function handleSalesAnalysis() {
         } else {
             statusDiv.innerHTML = 'Fetching sales...';
             log('Fetching new sales history from API...');
-            salesData = await fetchSalesHistory(league, btn);
+            // vvv ИЗМЕНЕНО: передан realm vvv
+            salesData = await fetchSalesHistory(league, btn, realm);
             log(`Found ${salesData.length} sales entries.`);
-            
             GLOBAL_HISTORY_CACHE = { data: salesData, timestamp: Date.now(), league: league };
             log('Sales history cached.');
         }
@@ -69,38 +109,45 @@ async function handleSalesAnalysis() {
         log('Rendering sales dashboard...');
         renderSalesDashboard(salesData);
         log('Sales dashboard rendered.');
+
         const secondsAgo = Math.round((Date.now() - GLOBAL_HISTORY_CACHE.timestamp) / 1000);
         statusDiv.innerHTML = `Sales Cache (${secondsAgo}s ago)`;
         statusDiv.style.color = '#2ecc71';
-
     } catch (err) {
-        // Log to both console and the UI log
         console.error("Error during sales analysis:", err);
-        log(`SALES ERROR: ${err.message}`); 
+        log(`SALES ERROR: ${err.message}`);
         statusDiv.innerHTML = `Error!`;
         statusDiv.style.color = '#e74c3c';
     } finally {
-        log('Sales analysis finished.'); // <-- ADDED LOG
+        log('Sales analysis finished.');
         if (btn.dataset.timer !== "active") {
             btn.disabled = false;
         }
     }
 }
 
-async function fetchSalesHistory(league, btnElement) {
+
+// vvv ИЗМЕНЕНО: добавлен параметр realm vvv
+async function fetchSalesHistory(league, btnElement, realm) {
     log('Checking for POESESSID cookie...');
     const cookie = await getCookie("https://www.pathofexile.com", "POESESSID");
     if (!cookie) {
-        // This is a critical failure point.
         throw new Error("Not logged in on pathofexile.com (POESESSID cookie missing). Please log in on the website and reload the extension.");
     }
-    log('POESESSID cookie found. Fetching from API...');
-    
-    const url = `https://www.pathofexile.com/api/trade2/history/${encodeURIComponent(league)}`;
-    const response = await fetch(url, { headers: { "Content-Type": "application/json" } });
-    
-    log(`API response status: ${response.status}`); // <-- ADDED LOG
 
+    // <<< ДОБАВЛЕНО: Логика выбора API >>>
+    const tradeApi = realm === 'pc' ? 'trade' : 'trade2';
+
+    log(`POESESSID cookie found. Fetching from ${tradeApi} API...`);
+
+    // vvv ИЗМЕНЕНО: используется переменная tradeApi vvv
+    const url = `https://www.pathofexile.com/api/${tradeApi}/history/${encodeURIComponent(league)}`;
+
+    const response = await fetch(url, {
+        headers: { "Content-Type": "application/json" }
+    });
+
+    log(`API response status: ${response.status}`);
     if (response.status === 429) {
         const retryAfter = response.headers.get('Retry-After') || '60';
         startCooldownTimer(btnElement, parseInt(retryAfter, 10));
@@ -108,16 +155,17 @@ async function fetchSalesHistory(league, btnElement) {
     }
     if (response.status === 403) throw new Error("Access Denied (403). Your POESESSID might be invalid or expired. Try re-logging on pathofexile.com.");
     if (!response.ok) throw new Error(`API Error: ${response.status}`);
-
     const data = await response.json();
     return data.result || [];
 }
+
 
 // ... the rest of your dashboard.js file remains the same ...
 
 // (renderSalesDashboard, handleAnalysis, fetchRates, fetchItems, renderDashboard, renderStashHeatmap, renderRatesSidebar, getChaosValue, getPriceHtml, getCookie, startCooldownTimer, timeSince)
 // ... copy the rest of the functions from the previous response here ...
 // PASTE ALL OTHER FUNCTIONS HERE
+// --- UPDATED RENDER SALES DASHBOARD ---
 // --- UPDATED RENDER SALES DASHBOARD ---
 function renderSalesDashboard(entries) {
     const section = document.getElementById('salesHistorySection');
@@ -134,14 +182,20 @@ function renderSalesDashboard(entries) {
 
     // --- STEP 1: Calculate stats using the FULL list of entries ---
     let totalChaosIncome = 0;
+    let hasBuyerInfo = false; // Проверим, есть ли информация о покупателе
     entries.forEach(entry => {
         totalChaosIncome += getChaosValue(entry.price.amount, entry.price.currency);
+        if (entry.buyer) {
+            hasBuyerInfo = true;
+        }
     });
-    
+
     const newestSaleTime = new Date(entries[0].time);
     const oldestSaleTime = new Date(entries[entries.length - 1].time);
+
     const timeDiffMs = newestSaleTime - oldestSaleTime;
-    const hoursElapsed = Math.max(timeDiffMs / (1000 * 60 * 60), 1 / 60);
+    const hoursElapsed = Math.max(timeDiffMs / (1000 * 60 * 60), 1 / 60); // Избегаем деления на ноль
+
     const chaosPerHour = totalChaosIncome / hoursElapsed;
 
     const summaryHtml = `
@@ -165,16 +219,40 @@ function renderSalesDashboard(entries) {
     let listHtml = '';
 
     limitedEntries.forEach(entry => {
-        const item = entry.item || {};
         const priceHtml = getPriceHtml(entry.price.amount, entry.price.currency);
         const saleDate = new Date(entry.time);
 
+        // <<< НАЧАЛО ИЗМЕНЕНИЙ: Проверка на существование entry.item >>>
+
+        let iconSrc = 'https://web.poecdn.com/image/Art/2DItems/Currency/CurrencyBlank.png?v=1'; // Запасная иконка
+        let mainName = 'Unknown Item';
+        let subText = '(PoE 1 History)'; // Пояснение для пользователя
+        let buyerHtml = '';
+
+        // Если есть информация о предмете (API PoE 2)
+        if (entry.item) {
+            const item = entry.item;
+            iconSrc = item.icon;
+            mainName = item.name || item.typeLine || 'Unnamed Item';
+            subText = (item.name && item.typeLine) ? item.typeLine : '';
+        }
+
+        // Показываем покупателя, если он есть
+        if (entry.buyer) {
+            buyerHtml = `<div class="sale-buyer">to <span class="sale-buyer-name">${entry.buyer}</span></div>`;
+        }
+        
+        const subTextHtml = subText ? `<div class="stale-sub-name">${subText}</div>` : '';
+
+        // <<< КОНЕЦ ИЗМЕНЕНИЙ >>>
+
         listHtml += `
         <div class="sale-row">
-            <img src="${item.icon}" class="item-icon">
+            <img src="${iconSrc}" class="item-icon">
             <div>
-                <div class="stale-main-name">${item.name || ''} ${item.typeLine || ''}</div>
-                <div class="sale-buyer">to <span class="sale-buyer-name">${entry.buyer}</span></div>
+                <div class="stale-main-name">${mainName}</div>
+                ${subTextHtml}
+                ${buyerHtml}
             </div>
             <div class="sale-price">${priceHtml}</div>
             <div class="sale-time" title="${saleDate.toLocaleString()}">${timeSince(saleDate)} ago</div>
@@ -185,6 +263,7 @@ function renderSalesDashboard(entries) {
     summaryCard.innerHTML = summaryHtml;
     listContainer.innerHTML = listHtml;
 }
+
 
 
 // =================================================================================
@@ -249,77 +328,150 @@ async function handleAnalysis(forceRefresh = false) {
 }
 
 async function fetchRates(league) {
+    // <<< НАЧАЛО ИЗМЕНЕНИЙ >>>
+
+    // 1. Определяем, какая игра выбрана (PoE 1 или PoE 2)
+    const realm = document.getElementById('realm').value;
+
     try {
-        const url = `https://poe.ninja/poe2/api/economy/exchange/current/overview?league=${encodeURIComponent(league)}&type=Currency`;
+        // 2. Выбираем правильный URL для poe.ninja
+        const ninjaApiBase = realm === 'pc' ? 'poe1' : 'poe2';
+        const url = `https://poe.ninja/${ninjaApiBase}/api/economy/exchange/current/overview?league=${encodeURIComponent(league)}&type=Currency`;
+        log(`Fetching rates from poe.ninja (${ninjaApiBase})...`);
+
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`Ninja Error: ${resp.status}`);
         const data = await resp.json();
+
         GLOBAL_RATES = {};
 
-        const chaosLine = data.lines.find(l => l.id === 'chaos');
-        const chaosPrimaryVal = chaosLine ? chaosLine.primaryValue : 1;
+        // 3. Обрабатываем ответ в зависимости от структуры
+        if (realm === 'pc') {
+            // Для PoE 1 (pc) значение 'primaryValue' уже является эквивалентом в хаосах
+            data.lines.forEach(line => {
+                const id = line.id;
+                const chaosEq = line.primaryValue;
+                if (chaosEq) {
+                    GLOBAL_RATES[id] = chaosEq;
+                    // Добавляем синонимы для совместимости
+                    if (id === 'gcp') GLOBAL_RATES['gemcutter'] = chaosEq;
+                    if (id === 'transmute') GLOBAL_RATES['transmutation'] = chaosEq;
+                }
+            });
 
-        data.lines.forEach(line => {
-            const id = line.id;
-            const valInDivines = line.primaryValue;
-            if (valInDivines) {
-                const chaosEq = valInDivines / chaosPrimaryVal;
-                GLOBAL_RATES[id] = chaosEq;
-                if (id === 'gcp') GLOBAL_RATES['gemcutter'] = chaosEq;
-                if (id === 'transmute') GLOBAL_RATES['transmutation'] = chaosEq;
-            }
-        });
-
+        } else {
+            // Для PoE 2 (poe2) логика остается прежней (расчет через Divine)
+            const chaosLine = data.lines.find(l => l.id === 'chaos');
+            const chaosPrimaryVal = chaosLine ? chaosLine.primaryValue : 1;
+            data.lines.forEach(line => {
+                const id = line.id;
+                const valInDivines = line.primaryValue;
+                if (valInDivines) {
+                    const chaosEq = valInDivines / chaosPrimaryVal;
+                    GLOBAL_RATES[id] = chaosEq;
+                    // Добавляем синонимы
+                    if (id === 'gcp') GLOBAL_RATES['gemcutter'] = chaosEq;
+                    if (id === 'transmute') GLOBAL_RATES['transmutation'] = chaosEq;
+                }
+            });
+        }
+        
+        // Гарантируем, что курс хаоса всегда равен 1
         GLOBAL_RATES['chaos'] = 1;
         log(`Rates loaded for ${Object.keys(GLOBAL_RATES).length} items.`);
+
     } catch (e) {
         console.error(e);
         log(`Rates failed: ${e.message}`);
+        // Резервные курсы на случай ошибки API
         GLOBAL_RATES = { 'chaos': 1, 'exalted': 10, 'divine': 100, 'mirror': 10000 };
     }
+    // <<< КОНЕЦ ИЗМЕНЕНИЙ >>>
 }
 
+
 async function fetchItems(account, league, realm) {
-    log('Searching items...');
-    const searchUrl = `https://pathofexile.com/api/trade2/search/${realm}/${encodeURIComponent(league)}`;
+    // Логика выбора API (trade или trade2)
+    const tradeApi = realm === 'pc' ? 'trade' : 'trade2';
+    log(`Searching items using ${tradeApi} API...`);
+
+    // --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
+    // Формируем URL поиска в зависимости от realm
+    let searchUrl;
+    if (realm === 'pc') {
+        // Для PoE 1 (pc) URL не содержит realm
+        searchUrl = `https://www.pathofexile.com/api/trade/search/${encodeURIComponent(league)}`;
+    } else {
+        // Для PoE 2 URL содержит realm
+        searchUrl = `https://www.pathofexile.com/api/trade2/search/${realm}/${encodeURIComponent(league)}`;
+    }
+    // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
     const searchPayload = {
         "query": {
             "status": { "option": "any" },
             "stats": [{ "type": "and", "filters": [] }],
-            "filters": { "trade_filters": { "filters": { "account": { "input": account } } } }
+            "filters": {
+                "trade_filters": {
+                    "filters": { "account": { "input": account } }
+                }
+            }
         },
         "sort": { "price": "asc" }
     };
-    
-    const searchResp = await fetch(searchUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(searchPayload) });
+
+    const searchResp = await fetch(searchUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchPayload)
+    });
+
     if (!searchResp.ok) throw new Error(`Trade API Error: ${searchResp.status}`);
     const searchData = await searchResp.json();
-    
     if (!searchData.total) return [];
-    
+
     const queryId = searchData.id;
     const allIds = searchData.result;
     let allItems = [];
-    
     const chunkSize = 10;
+
     for (let i = 0; i < allIds.length; i += chunkSize) {
         const chunk = allIds.slice(i, i + chunkSize);
-        const fetchUrl = `https://pathofexile.com/api/trade2/fetch/${chunk.join(',')}?query=${queryId}&realm=${realm}`;
-        log(`Chunk ${Math.ceil((i + 1) / chunkSize)} / ${Math.ceil(searchData.total / chunkSize)}`);
         
+        // --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
+        // Формируем URL для получения данных о предметах
+        let fetchUrl;
+        if (realm === 'pc') {
+            // Для PoE 1 URL не содержит realm в параметрах
+             fetchUrl = `https://www.pathofexile.com/api/trade/fetch/${chunk.join(',')}?query=${queryId}`;
+        } else {
+            // Для PoE 2 URL содержит realm
+            fetchUrl = `https://www.pathofexile.com/api/trade2/fetch/${chunk.join(',')}?query=${queryId}&realm=${realm}`;
+        }
+        // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
+        log(`Chunk ${Math.ceil((i + 1) / chunkSize)} / ${Math.ceil(searchData.total / chunkSize)}`);
         const fetchResp = await fetch(fetchUrl);
+
         if (fetchResp.status === 429) {
             const wait = parseInt(fetchResp.headers.get('Retry-After') || '5', 10);
             log(`Rate Limit. Waiting ${wait}s...`);
             await sleep(wait * 1000);
-            i -= chunkSize; continue;
+            i -= chunkSize; // Повторить эту же часть
+            continue;
         }
+        
         const fetchData = await fetchResp.json();
-        allItems = allItems.concat(fetchData.result);
-        await sleep(650);
+        if (fetchData.result) {
+            allItems = allItems.concat(fetchData.result);
+        }
+        
+        await sleep(650); // Задержка между запросами
     }
     return allItems;
 }
+
+
 
 function renderDashboard(items, hrsThreshold, container) {
     if (!items || items.length === 0) {
