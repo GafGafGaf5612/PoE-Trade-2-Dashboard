@@ -1,13 +1,15 @@
-# 🛠 PoE Trade 2 Dashboard
+# 🛠 PoE Trade 2 Dashboard (PoE 1 compatibility)
 
 ![Version](https://img.shields.io/badge/version-0.1-blue) ![Game](https://img.shields.io/badge/Path%20of%20Exile%202-Fate%20of%20the%20Vaal-dcb164) ![AI](https://img.shields.io/badge/Co--Pilot-Gemini%203%20Pro-8E44AD)
 
 > **English Description:**  
-> **PoE Trade 2 Dashboard** is a free Chrome Extension for **Path of Exile 2**. It provides advanced trade analytics: calculates total **stash value**, highlights **stale items** (unsold for too long), and displays live currency rates from **poe.ninja**. Secure, local execution using the official Trade API.
+> **PoE Trade 2 Dashboard** is a free Chrome Extension for **Path of Exile 2** and PoE 1 compatibility. It provides advanced trade analytics: calculates total **stash value**, highlights **stale items** (unsold for too long), and displays live currency rates from **poe.ninja**. Secure, local execution using the official Trade API.
 
 ---
 
 ### 🇷🇺 Описание проекта
+
+***PoE Trade 1 Совместимо***
 
 **PoE Trade 2 Dashboard** — это расширение для браузера Chrome, которое помогает не забывать про вещи в стэш трейде.
 
