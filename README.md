@@ -18,8 +18,6 @@
 **📢 Telegram канал автора:** [Sphere of Automation](https://t.me/SphereofAutomation)  
 *(Обновления, вопросы и обсуждения)*
 
-![Dashboard Preview](preview.png)
-
 ## ✨ Возможности
 
 *   **📊 Stale Items Analysis (Залежавшийся товар):** Находит предметы, которые висят в продаже дольше указанного времени (например, 48 часов) и требуют снижения цены.
